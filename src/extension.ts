@@ -58,7 +58,7 @@ function chooseFolder(folderName: string) {
   });
 }
 
-function createAndClone(pathStr: string, folderName: string) {  
+function createAndClone(pathStr: string, folderName: string) {
   fs.mkdir(pathStr, { recursive: true }).then((pPathAsOr) => {
     if (pPathAsOr !== undefined) {
       let clone = require("git-clone/promise");
@@ -129,7 +129,7 @@ function initClass(pathStr: string, mainPackageStr: string, modidStr: string, fo
 
 function modifySrc(pathStr: string, mainPackageStr: string, modidStr: string, initClassStr: string) {
   let javaPath = path.join(pathStr, "src", "main", "java");
-  
+
   fs.readFile(
     path.join(javaPath, packageToPath("net.fabricmc.example"), "ExampleMod.java"),
     { encoding: "ascii" }).then(
@@ -246,7 +246,7 @@ function configureMixinJson(pathStr: string, mainPackageStr: string, modidStr: s
 
       fs.rm(path.join(resourcePath,"modid.mixins.json")).then(
         () => {
-          fs.writeFile(path.join(resourcePath, modidStr + ".mod.json"), strJson, {encoding: "ascii"}).then(
+          fs.writeFile(path.join(resourcePath, modidStr + ".mixins.json"), strJson, {encoding: "ascii"}).then(
             () => {
               return;
             }, () => {

@@ -2,7 +2,7 @@
   "name": "fabricmodgenerator",
   "displayName": "FabricModGenerator",
   "description": "An easy to use tool to generate fabric mods",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "Roaringmind22",
   "engines": {
     "vscode": "^1.57.0"
