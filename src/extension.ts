@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as fs from 'fs/promises';
 import * as vscode from 'vscode';
+import * as path from "path";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -49,19 +50,18 @@ function chooseFolder(folderName: string) {
     }
 
     let pathAsStr = vscode.workspace.asRelativePath(basePath, true);
-    let nameOfProject = "\\" + folderName;
+    let nameOfProject = path.join(pathAsStr, folderName);
 
-    createAndClone(pathAsStr + nameOfProject, folderName);
+    createAndClone(nameOfProject, folderName);
   }, () => {
     console.log("select folder failed");
   });
 }
 
-function createAndClone(pathStr: string, folderName: string) {
+function createAndClone(pathStr: string, folderName: string) {  
   fs.mkdir(pathStr, { recursive: true }).then((pPathAsOr) => {
     if (pPathAsOr !== undefined) {
       let clone = require("git-clone/promise");
-      console.log(pPathAsOr);
       clone("https://github.com/FabricMC/fabric-example-mod", vscode.workspace.asRelativePath(pPathAsOr, true), []);
 
       mainPackage(pathStr, folderName);
@@ -74,9 +74,9 @@ function createAndClone(pathStr: string, folderName: string) {
 }
 
 function removeAllGit(pathStr: string) {
-  fs.rm(pathStr + "\\.github", { recursive: true }).then(
+  fs.rm(path.join(pathStr, ".github"), { recursive: true }).then(
     () => {
-      fs.rm(pathStr + "\\.git", { recursive: true }).then(
+      fs.rm(path.join(pathStr, ".git"), { recursive: true }).then(
         () => {
           return;
         }, () => {
@@ -94,7 +94,7 @@ function packageToPath(mainPackageStr: string) {
   let res: string = "";
 
   for (let s of splitted) {
-    res = res + "\\" + s;
+    res = path.join(res, s);
   }
 
   return res;
@@ -128,20 +128,22 @@ function initClass(pathStr: string, mainPackageStr: string, modidStr: string, fo
 }
 
 function modifySrc(pathStr: string, mainPackageStr: string, modidStr: string, initClassStr: string) {
+  let javaPath = path.join(pathStr, "src", "main", "java");
+  
   fs.readFile(
-    pathStr + "\\src\\main\\java" + packageToPath("net.fabricmc.example") + "\\ExampleMod.java",
+    path.join(javaPath, packageToPath("net.fabricmc.example"), "ExampleMod.java"),
     { encoding: "ascii" }).then(
       (javaMain) => {
         javaMain = javaMain.replace("net.fabricmc.example", mainPackageStr);
         javaMain = javaMain.replace("modid", modidStr);
         javaMain = javaMain.replace("ExampleMod", initClassStr);
 
-        fs.rm(pathStr + "\\src\\main\\java\\net", { recursive: true }).then(
+        fs.rm(path.join(javaPath, "net"), { recursive: true }).then(
           () => {
-            fs.mkdir(pathStr + "\\src\\main\\java" + packageToPath(mainPackageStr), { recursive: true }).then(
+            fs.mkdir(path.join(javaPath, packageToPath(mainPackageStr)), { recursive: true }).then(
               (str) => {
                 fs.writeFile(
-                  pathStr + "\\src\\main\\java" + packageToPath(mainPackageStr) + "\\" + initClassStr + ".java", javaMain).then(
+                  path.join(javaPath, packageToPath(mainPackageStr), initClassStr + ".java"), javaMain).then(
                     () => {
                       removeAllGit(pathStr);
                     }, () => {
@@ -195,7 +197,8 @@ function archivesBaseName(pathStr: string, mavenGroupStr: string, modidStr: stri
 }
 
 function configureModJson(pathStr: string, mainPackageStr: string, modidStr: string, initClassStr: string, modNameStr: string, descriptionStr: string, authorStr: string) {
-  fs.readFile(pathStr + "\\src\\main\\resources\\fabric.mod.json", {encoding: "ascii"}).then(
+  let resourcePath = path.join(pathStr, "src","main","resources");
+  fs.readFile(path.join(resourcePath,"fabric.mod.json"), {encoding: "ascii"}).then(
     (json) => {
       let objJson = JSON.parse(json);
 
@@ -210,9 +213,9 @@ function configureModJson(pathStr: string, mainPackageStr: string, modidStr: str
 
       let strJson = JSON.stringify(objJson);
 
-      fs.rm(pathStr + "\\src\\main\\resources\\fabric.mod.json").then(
+      fs.rm(path.join(resourcePath, "fabric.mod.json")).then(
         () => {
-          fs.writeFile(pathStr + "\\src\\main\\resources\\fabric.mod.json", strJson, {encoding: "ascii"}).then(
+          fs.writeFile(path.join(resourcePath, "fabric.mod.json"), strJson, {encoding: "ascii"}).then(
             () => {
               return;
             }, () => {
@@ -231,7 +234,8 @@ function configureModJson(pathStr: string, mainPackageStr: string, modidStr: str
 }
 
 function configureMixinJson(pathStr: string, mainPackageStr: string, modidStr: string) {
-  fs.readFile(pathStr + "\\src\\main\\resources\\modid.mixins.json", {encoding: "ascii"}).then(
+  let resourcePath = path.join(pathStr, "src","main","resources");
+  fs.readFile(path.join(resourcePath,"modid.mixins.json"), {encoding: "ascii"}).then(
     (json) => {
       let objJson = JSON.parse(json);
 
@@ -240,9 +244,9 @@ function configureMixinJson(pathStr: string, mainPackageStr: string, modidStr: s
 
       let strJson = JSON.stringify(objJson);
 
-      fs.rm(pathStr + "\\src\\main\\resources\\modid.mixins.json").then(
+      fs.rm(path.join(resourcePath,"modid.mixins.json")).then(
         () => {
-          fs.writeFile(pathStr + "\\src\\main\\resources\\" + modidStr + ".mod.json", strJson, {encoding: "ascii"}).then(
+          fs.writeFile(path.join(resourcePath, modidStr + ".mod.json"), strJson, {encoding: "ascii"}).then(
             () => {
               return;
             }, () => {
@@ -261,14 +265,15 @@ function configureMixinJson(pathStr: string, mainPackageStr: string, modidStr: s
 }
 
 function configureProperties(pathStr: string, mavenGroupStr: string, archivesBaseNameStr: string) {
-  fs.readFile(pathStr + "\\gradle.properties", {encoding: "ascii"}).then(
+  let gradlePath = path.join(pathStr, "gradle.properties");
+  fs.readFile(gradlePath, {encoding: "ascii"}).then(
     (properties) => {
       properties = properties.replace("com.example", mavenGroupStr);
       properties = properties.replace("fabric-example-mod", archivesBaseNameStr);
 
-      fs.rm(pathStr + "\\gradle.properties").then(
+      fs.rm(gradlePath).then(
         () => {
-          fs.writeFile(pathStr + "\\gradle.properties", properties, {encoding: "ascii"}).then(
+          fs.writeFile(gradlePath, properties, {encoding: "ascii"}).then(
             () => {
               return;
             }, () => {
